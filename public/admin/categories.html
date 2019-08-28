@@ -44,31 +44,33 @@
                         <h2>添加分类</h2>
                         <div class="form-group">
                             <label>名称</label>
-                            <input class="form-control" type="text" placeholder="请输入分类名称">
+                            <input class="form-control" type="text" placeholder="请输入分类名称" name="title" id="title">
                         </div>
                         <div class="form-group">
                             <label>图标</label>
-                            <input class="form-control" type="text" placeholder="请输入分类图标类名">
+                            <input class="form-control" type="text" placeholder="请输入分类图标类名" name="className" id="className">
                         </div>
                         <div class="form-group">
-                            <button class="btn btn-primary" type="submit">添加</button>
+                            <button class="btn btn-primary" type="button" id="addbtn">添加</button>
+                            <button class="btn btn-primary" type="button" id="mifbtn" style="display:none">修改</button>
                         </div>
                     </form>
                 </div>
                 <div class="col-md-8">
-                    <!-- <div class="page-action">
-            <a class="btn btn-danger btn-sm" href="javascript:;">批量删除</a>
-          </div> -->
+                    <div class="page-action" style="display:none">
+                        <a class="btn btn-danger btn-sm" href="javascript:;">批量删除</a>
+                    </div>
                     <table class="table table-striped table-bordered table-hover">
                         <thead>
                             <tr>
-                                <th class="text-center" width="40"><input type="checkbox"></th>
+                                <th class="text-center" width="40"><input type="checkbox" id="checkadd"></th>
                                 <th>名称</th>
+                                <th>图标</th>
                                 <th class="text-center" width="100">操作</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                            <!-- <tr>
                                 <td class="text-center"><input type="checkbox"></td>
                                 <td>奇趣事</td>
                                 <td class="text-center">
@@ -76,22 +78,7 @@
                                     <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="text-center"><input type="checkbox"></td>
-                                <td>潮科技</td>
-                                <td class="text-center">
-                                    <a href="javascript:;" class="btn btn-info btn-xs">编辑</a>
-                                    <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-center"><input type="checkbox"></td>
-                                <td>奇趣事</td>
-                                <td class="text-center">
-                                    <a href="javascript:;" class="btn btn-info btn-xs">编辑</a>
-                                    <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
-                                </td>
-                            </tr>
+                             -->
                         </tbody>
                     </table>
                 </div>
@@ -137,6 +124,135 @@
     </div>
     <script src="../assets/vendors/jquery/jquery.js"></script>
     <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+    <script src="../assets/vendors/art-template/template-web.js"></script>
+    <script type="text/html" id="cateTpl">
+        {{each list}}
+        <tr>
+            <td class="text-center"><input type="checkbox" data-id="{{$value._id}}"></td>
+            <td>{{$value.title}}</td>
+            <td>{{$value.className}}</td>
+            <td class="text-center" data-id="{{$value._id}}">
+                <a href="javascript:;" class="btn btn-info btn-xs">编辑</a>
+                <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    </script>
+
+    <script>
+        var userArr = [];
+        //查询分类并显示
+        $.ajax({
+                url: '/categories',
+                type: 'get',
+                success: function(res) {
+
+                    userArr = res;
+                    render(userArr)
+                }
+            })
+            //分类添加功能
+        $('#addbtn').on('click', function() {
+            var formData = $('form').serialize();
+            $.ajax({
+                type: 'post',
+                url: '/categories',
+                data: formData,
+                success: function(res) {
+
+                    userArr.push(res);
+                    render(userArr);
+                    document.querySelector("form").reset();
+                }
+
+            })
+        })
+
+
+
+        //编辑功能
+        var id = '';
+        $('tbody').on('click', '.btn-info', function() {
+            $('#addbtn').hide();
+            $('#mifbtn').show();
+            id = $(this).parent().attr('data-id');
+            var title = $(this).parents('tr').children().eq(1).text()
+            var className = $(this).parents('tr').children().eq(2).text()
+            $('form').children('h2').text('修改分类')
+            $('#title').val(title)
+            $('#className').val(className)
+        })
+
+
+        $('#mifbtn').on('click', function() {
+            var formData = $('form').serialize();
+            $.ajax({
+                type: 'put',
+                url: '/categories/' + id,
+                data: formData,
+                success: function(res) {
+
+                    var index = userArr.findIndex(item => item._id == res._id);
+                    userArr.splice(index, 1, res);
+                    render(userArr);
+                    document.querySelector("form").reset();
+                }
+            })
+            $('#addbtn').show();
+            $('#mifbtn').hide();
+        })
+
+        //渲染函数
+        function render(str) {
+            var scr = template('cateTpl', {
+                list: str
+            })
+            $('tbody').html(scr)
+        }
+
+
+        //多选
+        $('#checkadd').on('click', function() {
+            $('tbody input').prop('checked', $('#checkadd').prop('checked'))
+
+            if ($('tbody input[type="checkbox"]:checked').length > 2) {
+                $('.page-action').show()
+            } else {
+                $('.page-action').hide()
+            }
+        })
+
+        $('tbody').on('click', 'input', function() {
+                if ($('tbody input[type="checkbox"]:checked').length == $('tbody input[type="checkbox"]').length) {
+                    $('#checkadd').prop('checked', true)
+                } else {
+                    $('#checkadd').prop('checked', false)
+                }
+                if ($('tbody input[type="checkbox"]:checked').length > 1) {
+                    $('.page-action').show()
+                } else {
+                    $('.page-action').hide()
+                }
+            })
+            //删除
+        var id1 = '';
+        $('tbody').on('click', '.btn-danger', function() {
+            id1 = $(this).parent().attr('data-id');
+            $.ajax({
+                type: 'delete',
+                url: '/categories/' + id1,
+                success: function(res) {
+                    console.log(res);
+                    var index = userArr.findIndex(item => item._id == res._id);
+                    userArr.splice(index, 1);
+                    render(userArr);
+                }
+            })
+
+        })
+    </script>
+
+
     <script>
         NProgress.done()
     </script>
