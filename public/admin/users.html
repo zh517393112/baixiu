@@ -300,8 +300,6 @@
                     url: '/users/' + id,
                     data: formData,
                     success: function(res) {
-
-
                         var index = userArr.findIndex(item => item._id == res._id)
                         userArr[index] = res;
                         render(userArr);
@@ -322,7 +320,6 @@
                         var index = userArr.findIndex(item => item._id == res._id)
                         userArr.splice(index, 1);
                         render(userArr);
-
                     }
                 })
             }
